@@ -2,5 +2,6 @@
   "printerIp": "192.168.0.55",
   "username": "dkprint",
   "password": "dkprint",
-  "pollIntervalSeconds": 5
+  "pollIntervalSeconds": 5,
+  "hostname": "http://localhost:8080"
 }

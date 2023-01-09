@@ -40,7 +40,7 @@
               config.pollIntervalSeconds +
               " seconds"
           );
-          fetch("/api/printJobsAfter/" + lastJob.id, {
+          fetch(config.hostName + "/api/printJobsAfter/" + lastJob.id, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",

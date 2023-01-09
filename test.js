@@ -1,1 +1,1 @@
-console.log('deployed');
+console.log("deployed");
