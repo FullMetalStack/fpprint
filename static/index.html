@@ -1,0 +1,166 @@
+<html>
+  <script src="./fp.js" type="text/javascript"></script>
+  <script
+    type="text/javascript"
+    src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"
+  ></script>
+
+  <script>
+    var printer = null;
+
+    var config;
+
+    $(function () {
+      $.getJSON("config.json", function (data) {
+        config = data;
+
+        document.getElementById("printerIp").value = config.printerIp;
+
+        window.consoleLog = function (message) {
+          var consoleMessage = `${new Date().toISOString()} - ${message}`;
+          document.getElementById("consoleLog").innerHTML +=
+            consoleMessage + "<br>";
+          console.log(consoleMessage);
+        };
+
+        var consoleLog = window.consoleLog;
+
+        consoleLog("onLoad");
+
+        var epsonDevice = new epson.fiscalPrint();
+        consoleLog("Connecting to printer at " + config.printerIp + ":8008");
+
+        var lastJob = { id: -1, text: "" };
+
+        function pollServerForNewPrintJobs() {
+          consoleLog(
+            "Polling server for new print jobs after print ID: " +
+              lastJob.id +
+              "... next poll in " +
+              config.pollIntervalSeconds +
+              " seconds"
+          );
+          fetch("/api/printJobsAfter/" + lastJob.id, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                lastJob = data;
+                executePrint(data.text, "");
+              }
+            });
+
+          setTimeout(
+            pollServerForNewPrintJobs,
+            config.pollIntervalSeconds * 1000
+          );
+        }
+
+        pollServerForNewPrintJobs();
+      });
+    });
+
+    function executePrint(items, xml = "") {
+      // customer id
+      var customer_str = config.customer_str;
+
+      let itemsXml = "";
+
+      for (let i = 0; i < items.length; i++) {
+        const item = text.items[i];
+        itemsXml += `<printRecItem description="${item.name}" quantity="${item.quantity}" unitPrice="${item.price}" department="1" justification="1" />`;
+      }
+
+      var printerXml = "<printerCommand>" + itemsXml + +xml;
+      '<authorizeSales operator="10" amount="' +
+        text.total +
+        '" />' +
+        "</printerCommand>";
+
+      var epos = new epson.fiscalPrint();
+      epos.onreceive = function (result, tag_names_array, add_info) {
+        consoleLog(`onreceive: ${result.success}`);
+
+        carta_di_credito_ok = 1;
+      };
+
+      epos.send(xmlHTTPRequestURLMain, printerXml);
+
+      window.consoleLog("Printing: " + xml);
+      printer.addTextLang("en");
+      printer.addText(text);
+      printer.send();
+    }
+  </script>
+
+  <body
+    style="
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #f2f2f2;
+      padding: 20px;
+    "
+  >
+    <div style="flex-direction: row; display: flex">
+      <div style="margin-right: 40">
+        <h2>Print App Log:</h2>
+        <div
+          id="consoleLog"
+          style="
+            border: 1px solid black;
+            height: 600;
+            width: 400;
+            padding: 5;
+            overflow-y: scroll;
+            background-color: white;
+          "
+        ></div>
+      </div>
+      <div style="display: flex; flex-direction: column">
+        <h2>Test Print:</h2>
+        PRINTER IP:<br />
+        <input
+          type="text"
+          id="printerIp"
+          name="printe  rIp"
+          value="printerIp"
+          style="width: 200px; height: 30px; font-size: 16px"
+        /><br />
+        Note: This will print the text in the box below.<br />
+        Use XML format.<br />
+        <form style="flex-grow: 1; display: flex; flex-direction: column">
+          <textarea
+            id="ttp"
+            type="text"
+            name="text"
+            value="text"
+            cols="50"
+            style="flex-grow: 1; height: 100%"
+          ></textarea
+          ><br />
+          <button
+            type="button"
+            onclick="executePrint([], document.getElementsByName('#ttp')[0].value)"
+            style="
+              background-color: #4caf50; /* Green */
+              border: none;
+              color: white;
+              padding: 15px 32px;
+              text-align: center;
+              text-decoration: none;
+              display: inline-block;
+              font-size: 16px;
+              margin: 4px 2px;
+              cursor: pointer;
+            "
+          >
+            Print
+          </button>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
