@@ -3,5 +3,5 @@
   "username": "dkprint",
   "password": "dkprint",
   "pollIntervalSeconds": 5,
-  "hostname": "http://localhost:8080"
+  "hostName": "https://dkprintfp.onrender.com"
 }
