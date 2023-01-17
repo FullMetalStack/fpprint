@@ -33,7 +33,8 @@ app.post("/api/receivePrintJob", function (req, res) {
   var newJob = {
     id: printJobs.length + 1,
     name: req.query.name,
-    content: receiptText,
+    items,
+    // content: receiptText,
   };
 
   printJobs.push(newJob);
