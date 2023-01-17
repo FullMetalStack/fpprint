@@ -6,8 +6,6 @@
   ></script>
 
   <script>
-    var printer = null;
-
     var config;
 
     $(function () {
@@ -33,6 +31,11 @@
         var lastJob = { id: -1, text: "" };
 
         function pollServerForNewPrintJobs() {
+          // if (!printer) {
+          // consoleLog("Error connecting to printer");
+          // } else {
+          consoleLog("Connected to printer");
+
           consoleLog(
             "Polling server for new print jobs after print ID: " +
               lastJob.id +
@@ -48,12 +51,12 @@
           })
             .then((response) => response.json())
             .then((data) => {
-              if (data.success) {
+              if (data && data.length) {
                 lastJob = data;
-                executePrint(data.text, "");
+                executePrint(data, "");
               }
             });
-
+          // }
           setTimeout(
             pollServerForNewPrintJobs,
             config.pollIntervalSeconds * 1000
