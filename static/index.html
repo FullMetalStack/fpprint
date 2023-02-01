@@ -8,11 +8,11 @@
   <script>
     var config;
 
-    $(function () {
+    function onLoad() {
       $.getJSON("config.json", function (data) {
         config = data;
-
-        document.getElementById("printerIp").value = config.printerIp;
+        window.printerConfig = config;
+        const venueId = config.venueId;
 
         window.consoleLog = function (message) {
           var consoleMessage = `${new Date().toISOString()} - ${message}`;
@@ -20,13 +20,16 @@
             consoleMessage + "<br>";
           console.log(consoleMessage);
         };
-
         var consoleLog = window.consoleLog;
+
+        consoleLog("onLoad got config");
+
+        document.getElementById("printerIp").value = config.printerIp;
 
         consoleLog("onLoad");
 
         var epsonDevice = new epson.fiscalPrint();
-        consoleLog("Connecting to printer at " + config.printerIp + ":8008");
+        consoleLog("Connecting to printer at " + config.printerIp);
 
         var lastJob = { id: -1, text: "" };
 
@@ -43,12 +46,19 @@
               config.pollIntervalSeconds +
               " seconds"
           );
-          fetch(config.hostName + "/api/printJobsAfter/" + lastJob.id, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          })
+          fetch(
+            config.hostName +
+              "/api/printJobsAfter/" +
+              lastJob.id +
+              "/" +
+              venueId,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          )
             .then((response) => response.json())
             .then((data) => {
               if (data && data.length) {
@@ -65,38 +75,44 @@
 
         pollServerForNewPrintJobs();
       });
-    });
+    }
 
     function executePrint(items, xml = "") {
       // customer id
-      var customer_str = config.customer_str;
+      // var customer_str = config.customer_str;
 
       let itemsXml = "";
 
+      const OPERATOR_ID = 1;
+      let total = 0;
       for (let i = 0; i < items.length; i++) {
-        const item = text.items[i];
-        itemsXml += `<printRecItem description="${item.name}" quantity="${item.quantity}" unitPrice="${item.price}" department="1" justification="1" />`;
+        const item = items[i];
+        total += item.price * item.quantity;
+        itemsXml += `<printRecItem description="${item.name}" quantity="${item.quantity}" unitPrice="${item.price}" department="1" operator="${OPERATOR_ID}" justification="1" />`;
       }
 
-      var printerXml = "<printerCommand>" + itemsXml + +xml;
-      '<authorizeSales operator="10" amount="' +
-        text.total +
-        '" />' +
-        "</printerCommand>";
+      itemsXml +=
+        `<printRecTotal operator="${OPERATOR_ID}" description="` +
+        "CARTA DI CREDITO" +
+        '" payment="' +
+        total +
+        '" paymentType="2" index="1" justification = "1" />';
+
+      var printerXml = `<printerFiscalReceipt><beginFiscalReceipt operator="${OPERATOR_ID}" />${itemsXml}<endFiscalReceipt operator="${OPERATOR_ID}" /></printerFiscalReceipt>`;
 
       var epos = new epson.fiscalPrint();
       epos.onreceive = function (result, tag_names_array, add_info) {
-        consoleLog(`onreceive: ${result.success}`);
+        window.consoleLog(`onreceive: ${result.success}`);
 
         carta_di_credito_ok = 1;
       };
 
-      epos.send(xmlHTTPRequestURLMain, printerXml);
+      epos.send(window.printerConfig.printerUrl, printerXml);
 
       window.consoleLog("Printing: " + xml);
-      printer.addTextLang("en");
-      printer.addText(text);
-      printer.send();
+      // printer.addTextLang("en");
+      // printer.addText(text);
+      // printer.send();
     }
   </script>
 
@@ -106,6 +122,7 @@
       background-color: #f2f2f2;
       padding: 20px;
     "
+    onLoad="onLoad()"
   >
     <div style="flex-direction: row; display: flex">
       <div style="margin-right: 40">
@@ -139,7 +156,7 @@
           <textarea
             id="ttp"
             type="text"
-            name="text"
+            name="ttp"
             value="text"
             cols="50"
             style="flex-grow: 1; height: 100%"
@@ -147,7 +164,7 @@
           ><br />
           <button
             type="button"
-            onclick="executePrint([], document.getElementsByName('#ttp')[0].value)"
+            onclick="executePrint(JSON.parse(document.getElementsByName('ttp')[0].value), '')"
             style="
               background-color: #4caf50; /* Green */
               border: none;

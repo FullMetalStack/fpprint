@@ -7,7 +7,7 @@ app.use(express.json());
 
 var printJobs = [];
 
-app.get("/api/printJobsAfter/:lastJobId", function (req, res) {
+app.get("/api/printJobsAfter/:lastJobId/:venueId", function (req, res) {
   console.log(printJobs);
   var newPrintJobs = printJobs.filter((job) => job.id > req.params.lastJobId);
   console.log(newPrintJobs);
@@ -20,6 +20,7 @@ app.post("/api/receivePrintJob", function (req, res) {
   console.log("/api/receivePrintJob", req.body);
   console.log(req);
 
+  const venueId = req.body.venueId;
   const tableNumber = req.body.tableNumber;
   const items = req.body.items;
   const total = items.reduce((acc, item) => acc + item.price, 0);
@@ -32,6 +33,7 @@ app.post("/api/receivePrintJob", function (req, res) {
 
   var newJob = {
     id: printJobs.length + 1,
+    venueId: req.body.venueId,
     name: req.query.name,
     items,
     // content: receiptText,
