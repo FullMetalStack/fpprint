@@ -41,6 +41,8 @@ app.post("/api/receivePrintJob", function (req, res) {
 
   printJobs.push(newJob);
 
+  console.log("DK Print job received", newJob);
+
   res.send("DK Print job received");
 });
 
